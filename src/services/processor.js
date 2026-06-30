@@ -1,21 +1,11 @@
 const { getKeywords } = require('./sheets');
 const { generateProductContent } = require('./claude');
-const { updateProduct } = require('./shopify');
+const { updateProduct, getProduct } = require('./shopify');
 const { slugify } = require('../utils/slugify');
+const { descriptionToHtml } = require('../utils/description-html');
 
-function descriptionToHtml(description) {
-  const paragraphs = description.split(/\n\n+/);
-
-  return paragraphs
-    .map((paragraph) => {
-      const lines = paragraph.split('\n').join('<br>');
-      return `<p>${lines}</p>`;
-    })
-    .join('');
-}
-
-async function processProduct(product) {
-  const productId = product.id;
+async function processProduct(webhookProduct) {
+  const productId = webhookProduct.id;
 
   try {
     const keywords = await getKeywords();
@@ -24,8 +14,9 @@ async function processProduct(product) {
       throw new Error('No keywords available from Google Sheets');
     }
 
+    const product = await getProduct(productId);
     const content = await generateProductContent(product, keywords);
-    const oldTitle = product.title;
+    const oldTitle = product.title || webhookProduct.title;
 
     const payload = {
       title: content.title,

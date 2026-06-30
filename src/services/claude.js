@@ -1,65 +1,20 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const { buildListingPrompt } = require('../prompts/listing-sop');
+const { formatProductContext, getProductContext } = require('../utils/product-context');
 
 const MODEL = 'claude-sonnet-4-6';
 
-const SYSTEM_PROMPT = `You are an expert SEO copywriter for a women's fashion e-commerce store. You write product titles and descriptions that rank well on Google Shopping and convert browsers into buyers. You always follow the exact output format provided. Never add commentary, headers, or extra text outside the format.`;
+const SYSTEM_PROMPT = `You are a senior listing copywriter for a USA women's fashion Shopify dropshipping store running Google Ads PMax. You follow the Master Listing SOP exactly on every product. Output only valid JSON with "title" and "description" fields. Never add commentary outside the JSON.`;
 
 function stripHtml(html) {
   if (!html) return '';
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function buildUserPrompt(product, keywords, strict = false) {
-  const keywordList = keywords.join(', ');
-  const strictNote = strict
-    ? '\n\nIMPORTANT: Respond with ONLY valid JSON. No markdown code fences, no explanation, no extra text.'
-    : '';
-
-  return `Here is a Shopify product that needs an SEO-optimized title and description.
-
-PRODUCT INFO:
-Title: ${product.title}
-Tags: ${product.tags || ''}
-Existing Description: ${stripHtml(product.body_html)}
-
-AVAILABLE KEYWORDS (high-value, from Google Ads Keyword Planner):
-${keywordList}
-
-YOUR TASK:
-
-1. ANALYZE the product — identify its color, length, neckline, sleeve style, silhouette, and occasion type based on the title, tags, and description.
-
-2. SELECT 3 to 4 keywords from the list above that best match this product. Prioritize specificity and search volume relevance.
-
-3. WRITE a new product title by combining those 3-4 keywords naturally. The title should be 60-80 characters. No brand name. No punctuation between keywords except spaces. Example format:
-Black Mini Dress Mock Neck Long Sleeve Bodycon Style
-
-4. WRITE a product description in EXACTLY this format:
-
-[One sentence intro paragraph about the dress — style, occasion, feeling]
-
-Why You'll Love It:
-- [Benefit or feature 1]
-- [Benefit or feature 2]
-- [Benefit or feature 3]
-- [Benefit or feature 4]
-
-[One closing sentence about versatility or styling]
-
-Size Chart:
-| Size | 2 | 4 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20(3XL) |
-
-RESPOND IN THIS EXACT JSON FORMAT — nothing else:
-{
-  "title": "the new SEO title here",
-  "description": "the full description here with \\n for line breaks"
-}${strictNote}`;
-}
-
 function parseClaudeResponse(text) {
   const trimmed = text.trim();
-
   const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
+
   if (!jsonMatch) {
     throw new Error('No JSON object found in Claude response');
   }
@@ -77,14 +32,26 @@ function parseClaudeResponse(text) {
 }
 
 async function callClaude(client, product, keywords, strict = false) {
+  const productContext = getProductContext(product);
+  const promptProduct = {
+    title: product.title,
+    tags: product.tags,
+    existingDescription: stripHtml(product.body_html),
+  };
+
   const message = await client.messages.create({
     model: MODEL,
-    max_tokens: 2048,
+    max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages: [
       {
         role: 'user',
-        content: buildUserPrompt(product, keywords, strict),
+        content: buildListingPrompt(
+          promptProduct,
+          keywords,
+          formatProductContext(productContext),
+          strict
+        ),
       },
     ],
   });
@@ -111,7 +78,7 @@ async function generateProductContent(product, keywords) {
     return parseClaudeResponse(lastRawResponse);
   } catch (firstError) {
     console.warn(
-      `Claude JSON parse failed for product ${product.id}, retrying with stricter prompt:`,
+      `Claude JSON parse failed for product ${product.id}, retrying:`,
       firstError.message
     );
 

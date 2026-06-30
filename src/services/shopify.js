@@ -105,6 +105,7 @@ async function getProduct(productId) {
       tags: product.tags,
       images: product.images,
       variants: product.variants,
+      options: product.options,
       handle: product.handle,
     };
   } catch (error) {
@@ -177,10 +178,6 @@ function buildVariants(existingVariants, optionIndex) {
 
 async function updateProduct(productId, payload) {
   try {
-    const existing = await getProduct(productId);
-    const optionIndex = findSizeOptionIndex(existing);
-    const variants = buildVariants(existing.variants || [], optionIndex);
-
     const productPayload = {
       product: {
         id: productId,
@@ -188,19 +185,8 @@ async function updateProduct(productId, payload) {
         body_html: payload.body_html,
         handle: payload.handle,
         status: 'draft',
-        variants,
       },
     };
-
-    const sizeOptionName =
-      existing.options?.[optionIndex]?.name || 'Size';
-
-    productPayload.product.options = [
-      {
-        name: sizeOptionName,
-        values: STANDARD_SIZES,
-      },
-    ];
 
     const data = await shopifyRequest(
       'PUT',
