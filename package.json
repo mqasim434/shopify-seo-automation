@@ -1,0 +1,24 @@
+{
+  "name": "shopify-seo-automation",
+  "version": "1.0.0",
+  "description": "Shopify SEO automation — generates optimized product titles and descriptions via Claude AI",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "register-webhook": "node scripts/register-webhook.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.107.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "googleapis": "^173.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
