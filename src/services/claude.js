@@ -31,6 +31,67 @@ function parseClaudeResponse(text) {
   };
 }
 
+const GENERIC_LABELS = [
+  /^silhouette:/im,
+  /^length:/im,
+  /^color:/im,
+  /^occasion ready:/im,
+  /^occasion:/im,
+  /^style:/im,
+  /^design:/im,
+  /^fit:/im,
+  /^versatility:/im,
+];
+
+const BANNED_PHRASES = [
+  /air of drama/i,
+  /endlessly versatile/i,
+  /go-to choice/i,
+  /stunning,? reliable/i,
+  /effortlessly dressed-up/i,
+  /wide range of body shapes/i,
+  /pairs with virtually any/i,
+];
+
+function validateDescriptionContent(description) {
+  const issues = [];
+
+  if (!/SIZE CHART \(IN\)/i.test(description)) {
+    issues.push('missing SIZE CHART (IN)');
+  }
+
+  if (/^WHY YOU'?LL LOVE IT/im.test(description.trim())) {
+    issues.push('description must start with ALL CAPS headline, not WHY YOU\'LL LOVE IT');
+  }
+
+  if (!/^WHY YOU'?LL LOVE IT/im.test(description)) {
+    issues.push('missing WHY YOU\'LL LOVE IT section');
+  }
+
+  for (const pattern of GENERIC_LABELS) {
+    if (pattern.test(description)) {
+      issues.push(`generic bullet label used: ${pattern.source}`);
+    }
+  }
+
+  for (const pattern of BANNED_PHRASES) {
+    if (pattern.test(description)) {
+      issues.push(`banned AI phrase used: ${pattern.source}`);
+    }
+  }
+
+  const introEnd = description.search(/WHY YOU'?LL LOVE IT/i);
+  if (introEnd >= 0) {
+    const headlineAndIntro = description.slice(0, introEnd).trim();
+    const introLines = headlineAndIntro.split('\n').filter((l) => l.trim());
+    if (introLines.length < 2) {
+      issues.push('missing ALL CAPS headline and/or intro paragraph before bullets');
+    }
+  }
+
+  return issues;
+}
+
 async function callClaude(client, product, keywords, strict = false) {
   const productContext = getProductContext(product);
   const promptProduct = {
@@ -73,25 +134,42 @@ async function generateProductContent(product, keywords) {
   const client = new Anthropic({ apiKey });
   let lastRawResponse = '';
 
-  try {
-    lastRawResponse = await callClaude(client, product, keywords, false);
-    return parseClaudeResponse(lastRawResponse);
-  } catch (firstError) {
-    console.warn(
-      `Claude JSON parse failed for product ${product.id}, retrying:`,
-      firstError.message
-    );
-
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      lastRawResponse = await callClaude(client, product, keywords, true);
-      return parseClaudeResponse(lastRawResponse);
-    } catch (secondError) {
-      console.error(
-        `Claude returned malformed JSON twice for product ${product.id}. Raw output:`,
-        lastRawResponse
+      lastRawResponse = await callClaude(
+        client,
+        product,
+        keywords,
+        attempt > 0
       );
-      throw new Error(
-        `Failed to parse Claude response after retry: ${secondError.message}`
+      const parsed = parseClaudeResponse(lastRawResponse);
+      const issues = validateDescriptionContent(parsed.description);
+
+      if (issues.length === 0) {
+        return parsed;
+      }
+
+      console.warn(
+        `Claude description quality issues for product ${product.id} (attempt ${attempt + 1}):`,
+        issues.join('; ')
+      );
+
+      if (attempt === 1) {
+        console.warn('Using best available response after quality retry');
+        return parsed;
+      }
+    } catch (error) {
+      if (attempt === 1) {
+        console.error(
+          `Claude failed twice for product ${product.id}. Raw output:`,
+          lastRawResponse
+        );
+        throw error;
+      }
+
+      console.warn(
+        `Claude request failed for product ${product.id}, retrying:`,
+        error.message
       );
     }
   }

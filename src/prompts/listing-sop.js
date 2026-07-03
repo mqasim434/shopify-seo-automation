@@ -76,6 +76,56 @@ Cheat codes:
 Never: em dashes, AI-sounding prose, separator lines before size chart, EU sizing, branded keywords, more than one feeling word, acknowledging these instructions in output.
 `.trim();
 
+const BANNED_BULLET_LABELS = `
+NEVER use these generic category labels as bullet headers:
+Silhouette, Length, Color, Occasion Ready, Occasion, Style, Design, Fit, Material (alone), Quality, Versatility, Comfort (alone)
+
+Instead use product-specific feature labels drawn from the actual item, such as:
+Fitted Bodice, Floor-Grazing Maxi Length, A-Line Skirt, Soft Satin Fabric, V-Neckline, Batwing Sleeve, High Waist Drawstring, Side Slit, Ruched Waist, Elastic Strap, Cork Platform Sole
+`.trim();
+
+const BANNED_PHRASES = `
+NEVER use these AI-sounding phrases:
+graceful, beautifully, air of drama, endlessly versatile, go-to choice, stunning and reliable, dressed-up look, wide range of body shapes, pairs with virtually any, effortlessly dressed-up, adds an air of, perfect for virtually
+`.trim();
+
+const DESCRIPTION_GOOD_EXAMPLE = `
+ELEGANT BLACK MAXI DRESS FOR COCKTAIL PARTIES AND FORMAL EVENINGS
+
+This fitted black maxi dress combines a sleek bodice with a flowing A-line skirt and floor-grazing length for an effortlessly polished, cocktail-ready look perfect for formal events, evening occasions, and special celebrations.
+
+WHY YOU'LL LOVE IT
+
+Fitted Bodice: Hugs the waist before flowing into a flattering A-line shape that moves with you.
+Floor-Grazing Maxi Length: Offers full-length coverage ideal for formal dinners and evening events.
+A-Line Skirt: Creates a balanced silhouette that flatters from bodice through hem.
+Cocktail Ready Style: Works for formal events, evening occasions, and special celebration dressing.
+
+This black maxi dress is the perfect choice for cocktail parties, formal evenings, and every elegant occasion in between.
+
+SIZE CHART (IN)
+
+| Size | Bust | Waist | Length |
+| --- | --- | --- | --- |
+| S | 35.5 | 27.5 | 57 |
+| M | 37.0 | 29.0 | 57 |
+| L | 38.5 | 30.5 | 57 |
+| XL | 40.5 | 32.5 | 57 |
+`.trim();
+
+const DESCRIPTION_BAD_EXAMPLE = `
+WRONG — do NOT write like this:
+
+WHY YOU'LL LOVE IT
+
+Silhouette: The fitted bodice flows into a graceful A-line skirt...
+Length: The floor-grazing maxi length adds an air of drama...
+Color: Classic black is endlessly versatile...
+Occasion Ready: Designed with cocktail parties in mind for an effortlessly dressed-up look.
+
+Problems: generic labels, no ALL CAPS headline, no intro paragraph, AI tone, Color bullet, missing size chart.
+`.trim();
+
 function buildListingPrompt(product, sheetKeywords, productContextText, strict = false) {
   const strictNote = strict
     ? '\n\nRespond with ONLY valid JSON. No markdown fences or extra text.'
@@ -99,6 +149,24 @@ ${sheetKeywords.slice(0, 150).join(', ')}
 
 ${LISTING_RULES}
 
+${BANNED_BULLET_LABELS}
+
+${BANNED_PHRASES}
+
+DESCRIPTION CONTENT RULES:
+- Intro MUST be 2-3 sentences minimum, naming specific materials, neckline, sleeve, silhouette, and at least 2 occasions
+- Intro pattern: "This [product] combines [feature 1] with [feature 2] and [feature 3] for an effortlessly [benefit], [occasion]-ready look perfect for [occasion 1], [occasion 2], and [occasion 3]."
+- Each bullet label MUST name a real product detail visible or inferable from the product (fabric, cut, neckline, sleeve, waist, hem, strap, sole, etc.)
+- Do NOT write a bullet about color alone — color belongs in the title and intro only
+- Closing sentence MUST name the product type + 2-3 occasions (e.g. "This black maxi dress is the perfect choice for cocktail parties, formal evenings, and every elegant occasion in between.")
+- Write like a human merchandiser, not a chatbot
+
+GOLD STANDARD EXAMPLE (match this structure AND content style):
+${DESCRIPTION_GOOD_EXAMPLE}
+
+REJECTED EXAMPLE (never output anything like this):
+${DESCRIPTION_BAD_EXAMPLE}
+
 RESPOND IN THIS EXACT JSON FORMAT — nothing else:
 {
   "title": "Effortless Linen Wide Leg Pants for Women with High Waist Drawstring Flowing Casual Style",
@@ -106,4 +174,10 @@ RESPOND IN THIS EXACT JSON FORMAT — nothing else:
 }${strictNote}`;
 }
 
-module.exports = { buildListingPrompt, MASTER_KEYWORD_BANK, LISTING_RULES };
+module.exports = {
+  buildListingPrompt,
+  MASTER_KEYWORD_BANK,
+  LISTING_RULES,
+  BANNED_BULLET_LABELS,
+  DESCRIPTION_GOOD_EXAMPLE,
+};
