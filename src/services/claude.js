@@ -1,13 +1,18 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { buildListingPrompt } = require('../prompts/listing-sop');
 const { formatProductContext, getProductContext } = require('../utils/product-context');
+const {
+  buildVisionImageBlocks,
+  formatVisionContext,
+  getProductImageUrls,
+} = require('../utils/product-images');
 
 const MODEL = 'claude-sonnet-4-6';
 
-const SYSTEM_PROMPT = `You are a senior listing copywriter for a USA women's fashion Shopify dropshipping store. You write exactly like the client's approved listing samples: ALL CAPS headline, two-sentence intro with styling/pairing detail, compound feature bullet labels, specific construction details, and NEVER mention polyester, poly, or synthetic fabric names. Output only valid JSON with "title" and "description" fields.`;
+const SYSTEM_PROMPT = `You are a senior listing copywriter for a USA women's fashion Shopify dropshipping store. You write exactly like the client's approved listing samples: evocative ALL CAPS headline, intro naming construction and occasions, WHY YOU'LL LOVE IT with 4 feature bullets, closing sentence, and SIZE CHART (IN). Study product images when provided for visible design details and color variant count. NEVER mention fabric, material, polyester, or any fiber names — describe construction and design only. Output only valid JSON with "title" and "description" fields.`;
 
-const POLYESTER_PATTERN =
-  /polyester|poly[- ]blend|poly-blend|polycotton|poly cotton|synthetic fabric|synthetic material|man-made fiber|\bpoly\b/i;
+const FABRIC_MATERIAL_PATTERN =
+  /\bfabric\b|\bmaterial\b|polyester|poly[- ]blend|poly-blend|polycotton|poly cotton|synthetic fabric|synthetic material|man-made fiber|\blinen\b|\bcotton\b|\bsilk\b|\bsatin\b|\bleather\b|\bsuede\b|\bnylon\b|\bspandex\b|\belastane\b|\brayon\b|\bviscose\b|\bchiffon\b|\bgeorgette\b|\btulle\b|\bfleece\b|\bwool\b|\bacrylic\b|\bpoly\b/i;
 
 function stripHtml(html) {
   if (!html) return '';
@@ -17,15 +22,18 @@ function stripHtml(html) {
 function sanitizeSupplierDescription(text) {
   if (!text) return '';
 
-  const withoutPolySentences = text
+  const withoutFabricSentences = text
     .split(/(?<=[.!?])\s+/)
-    .filter((sentence) => !POLYESTER_PATTERN.test(sentence))
+    .filter((sentence) => !FABRIC_MATERIAL_PATTERN.test(sentence))
     .join(' ')
     .trim();
 
-  return withoutPolySentences
-    .replace(/\b\d+%?\s*(polyester|poly|spandex|elastane)\b/gi, '')
-    .replace(/\b(polyester|poly[- ]blend|poly-blend|polycotton|poly cotton)\b/gi, '')
+  return withoutFabricSentences
+    .replace(/\b\d+%?\s*[\w-]*\s*(fabric|material|polyester|poly|cotton|linen|spandex|elastane)\b/gi, '')
+    .replace(
+      /\b(fabric|material|polyester|poly[- ]blend|poly-blend|polycotton|poly cotton|linen|cotton|silk|satin|leather|suede|nylon|spandex|rayon|viscose)\b/gi,
+      ''
+    )
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -60,11 +68,14 @@ const GENERIC_LABELS = [
   /^design:\s/i,
   /^fit:\s/i,
   /^material:\s/i,
+  /^fabric:\s/i,
   /^quality:\s/i,
   /^comfort:\s/i,
 ];
 
 const BANNED_PHRASES = [
+  /\bfabric\b/i,
+  /\bmaterial\b/i,
   /polyester/i,
   /\bpoly\b/i,
   /poly blend/i,
@@ -74,6 +85,23 @@ const BANNED_PHRASES = [
   /synthetic fabric/i,
   /synthetic material/i,
   /man-made fiber/i,
+  /\blinen\b/i,
+  /\bcotton\b/i,
+  /\bsilk\b/i,
+  /\bsatin\b/i,
+  /\bleather\b/i,
+  /\bsuede\b/i,
+  /\bnylon\b/i,
+  /\bspandex\b/i,
+  /\belastane\b/i,
+  /\brayon\b/i,
+  /\bviscose\b/i,
+  /\bchiffon\b/i,
+  /\bgeorgette\b/i,
+  /\btulle\b/i,
+  /\bfleece\b/i,
+  /\bwool\b/i,
+  /\bacrylic\b/i,
   /air of drama/i,
   /endlessly versatile/i,
   /go-to choice/i,
@@ -94,6 +122,15 @@ function countIntroSentences(description) {
   return introText.split(/(?<=[.!?])\s+/).filter((sentence) => sentence.trim()).length;
 }
 
+function hasClosingSentence(description) {
+  return (
+    /perfect choice for/i.test(description) ||
+    /perfect (?:summer |everyday )?essential/i.test(description) ||
+    /delivers effortless/i.test(description) ||
+    /Whether you are/i.test(description)
+  );
+}
+
 function validateDescriptionContent(description) {
   const issues = [];
 
@@ -109,8 +146,8 @@ function validateDescriptionContent(description) {
     issues.push('missing WHY YOU\'LL LOVE IT section');
   }
 
-  if (!/are the perfect choice for/i.test(description)) {
-    issues.push('missing closing sentence pattern');
+  if (!hasClosingSentence(description)) {
+    issues.push('missing closing sentence');
   }
 
   for (const pattern of GENERIC_LABELS) {
@@ -139,7 +176,7 @@ function validateDescriptionContent(description) {
   }
 
   const bulletSection = description.match(
-    /WHY YOU'?LL LOVE IT([\s\S]*?)(?:These |This |SIZE CHART)/i
+    /WHY YOU'?LL LOVE IT([\s\S]*?)(?:\n\n(?:This |These |Whether you |SIZE CHART))/i
   );
   if (bulletSection) {
     const bullets = bulletSection[1]
@@ -152,7 +189,7 @@ function validateDescriptionContent(description) {
     }
 
     for (const bullet of bullets) {
-      if (bullet.length < 60) {
+      if (bullet.length < 50) {
         issues.push('feature bullets must be full descriptive sentences');
         break;
       }
@@ -162,14 +199,46 @@ function validateDescriptionContent(description) {
   return issues;
 }
 
-async function callClaude(client, product, keywords, strict = false, retryIssues = []) {
-  const productContext = getProductContext(product);
+function buildMessageContent(product, keywords, productContext, strict, retryIssues) {
   const rawDescription = stripHtml(product.body_html);
   const promptProduct = {
     title: product.title,
     tags: product.tags,
     existingDescription: sanitizeSupplierDescription(rawDescription),
   };
+
+  const visionContext = formatVisionContext(product);
+  const promptText = buildListingPrompt(
+    promptProduct,
+    keywords,
+    formatProductContext(productContext),
+    visionContext,
+    strict,
+    retryIssues
+  );
+
+  const imageBlocks = buildVisionImageBlocks(product);
+  const content = [];
+
+  if (imageBlocks.length > 0) {
+    content.push({
+      type: 'text',
+      text: `PRODUCT IMAGES (${imageBlocks.length}) — analyze visible design details, silhouette, and color variant count. Never name fabrics or materials.`,
+    });
+    content.push(...imageBlocks);
+  }
+
+  content.push({ type: 'text', text: promptText });
+  return content;
+}
+
+async function callClaude(client, product, keywords, strict = false, retryIssues = []) {
+  const productContext = getProductContext(product);
+  const imageCount = getProductImageUrls(product).length;
+
+  if (imageCount > 0) {
+    console.log(`Using ${imageCount} product image(s) for vision on product ${product.id}`);
+  }
 
   const message = await client.messages.create({
     model: MODEL,
@@ -178,13 +247,7 @@ async function callClaude(client, product, keywords, strict = false, retryIssues
     messages: [
       {
         role: 'user',
-        content: buildListingPrompt(
-          promptProduct,
-          keywords,
-          formatProductContext(productContext),
-          strict,
-          retryIssues
-        ),
+        content: buildMessageContent(product, keywords, productContext, strict, retryIssues),
       },
     ],
   });
@@ -236,7 +299,7 @@ async function generateProductContent(product, keywords) {
     } catch (error) {
       if (attempt === 3) {
         console.error(
-          `Claude failed twice for product ${product.id}. Raw output:`,
+          `Claude failed for product ${product.id}. Raw output:`,
           lastRawResponse
         );
         throw error;
