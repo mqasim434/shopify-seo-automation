@@ -43,21 +43,28 @@ function isAllCapsHeadline(line) {
   return letters.length >= 8 && line === line.toUpperCase();
 }
 
-function formatFeatureLine(line) {
-  const colonIndex = line.indexOf(':');
+function stripBulletPrefix(line) {
+  return line.replace(/^[-•*]\s+/, '').trim();
+}
+
+function formatFeatureListItem(line) {
+  const cleaned = stripBulletPrefix(line);
+  const colonIndex = cleaned.indexOf(':');
   if (colonIndex <= 0) return null;
 
-  const label = line.slice(0, colonIndex + 1).trim();
-  const text = line.slice(colonIndex + 1).trim();
+  const label = cleaned.slice(0, colonIndex + 1).trim();
+  const text = cleaned.slice(colonIndex + 1).trim();
   if (!text || label.length > 60) return null;
 
-  return `<p><strong>${label}</strong> ${text}</p>`;
+  return `<li><strong>${label}</strong> ${text}</li>`;
 }
 
 function descriptionToHtml(description) {
   const lines = description.split('\n');
   const parts = [];
   let tableBuffer = [];
+  let bulletBuffer = [];
+  let inBulletSection = false;
 
   function flushTable() {
     if (tableBuffer.length) {
@@ -66,30 +73,54 @@ function descriptionToHtml(description) {
     }
   }
 
+  function flushBullets() {
+    if (bulletBuffer.length) {
+      parts.push(`<ul>${bulletBuffer.join('')}</ul>`);
+      bulletBuffer = [];
+    }
+    inBulletSection = false;
+  }
+
   for (const line of lines) {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      flushTable();
+      if (!inBulletSection) {
+        flushBullets();
+        flushTable();
+      }
       continue;
     }
 
     if (trimmed.startsWith('|')) {
+      flushBullets();
       tableBuffer.push(trimmed);
       continue;
     }
 
     flushTable();
 
-    if (/^WHY YOU'?LL LOVE IT$/i.test(trimmed) || /^SIZE CHART \(IN\)$/i.test(trimmed)) {
+    if (/^WHY YOU'?LL LOVE IT$/i.test(trimmed)) {
+      flushBullets();
+      inBulletSection = true;
       parts.push(`<p><strong>${trimmed.toUpperCase()}</strong></p>`);
       continue;
     }
 
-    const featureLine = formatFeatureLine(trimmed);
-    if (featureLine) {
-      parts.push(featureLine);
+    if (/^SIZE CHART \(IN\)$/i.test(trimmed)) {
+      flushBullets();
+      parts.push(`<p><strong>${trimmed.toUpperCase()}</strong></p>`);
       continue;
+    }
+
+    const featureItem = formatFeatureListItem(trimmed);
+    if (inBulletSection && featureItem) {
+      bulletBuffer.push(featureItem);
+      continue;
+    }
+
+    if (inBulletSection) {
+      flushBullets();
     }
 
     if (isAllCapsHeadline(trimmed)) {
@@ -100,8 +131,9 @@ function descriptionToHtml(description) {
     parts.push(`<p>${trimmed}</p>`);
   }
 
+  flushBullets();
   flushTable();
   return parts.join('');
 }
 
-module.exports = { descriptionToHtml };
+module.exports = { descriptionToHtml, stripBulletPrefix, formatFeatureListItem };

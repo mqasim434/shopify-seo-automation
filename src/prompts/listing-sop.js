@@ -1,3 +1,5 @@
+const { WEDDING_GUEST_KEYWORD_RULE } = require('../utils/wedding-guest-keyword');
+
 const MASTER_KEYWORD_BANK = `
 DRESSES: dresses, dresses for women, maxi dress, midi dress, mini dress, a line dress, wrap dress, bodycon dress, shirt dress, sweater dress, denim dress, flowy dresses, strapless dress, long sleeve dress, halter dress, corset dress, sequin dress, white dress, black dress, red dress, pink dress, green dress, sage green dress, blue dresses for women, floral maxi dress, floral mini dress, sundress, sundresses, summer dresses, linen dress, casual dresses, boho dresses, wedding guest dresses, formal wedding guest dresses, fall wedding guest dresses, cocktail dresses, formal dresses, bridesmaid dresses, mother of the bride dresses, evening dresses, party dresses, elegant dresses, maternity dresses
 
@@ -58,7 +60,7 @@ Description format (plain text, use \\n for line breaks):
 1. ALL CAPS headline — evocative positioning line (e.g. BREEZY COASTAL STYLE FOR WARM-WEATHER DAYS, ORTHOPEDIC SUPPORT WITH SUMMER STYLE)
 2. Intro — 1 to 3 sentences naming construction, silhouette, and occasions (match client sample rhythm)
 3. WHY YOU'LL LOVE IT
-4. Exactly 4 lines: Feature Label: One full descriptive sentence
+4. Exactly 4 bullet lines prefixed with "- " (e.g. - Feature Label: One full descriptive sentence)
 5. Closing sentence — warm merchandising line naming product type and occasion (see patterns below)
 6. SIZE CHART (IN) — flows directly after closing, no separator line
 7. Size chart table using ONLY sizes from product context
@@ -68,10 +70,12 @@ Intro rules (CRITICAL — match client samples):
 - Patterns: "The [name/type] combines...", "This [product] combines...", "Flowing in a [silhouette]..."
 - Name neckline, sleeve, waist, hem, heel, strap, print, collar, pockets — never fabric names
 - Include 2-3 specific occasions: beach holidays, garden parties, wedding guest events, gallery days, etc.
+- When mentioning weddings, garden galas, cocktail parties, or formal evenings on a dress, always use "wedding guest dress" or "wedding guest dresses" in that sentence
 
 Bullet rules (CRITICAL — match client samples):
+- Prefix every feature line with "- " so it renders as a bullet list in Shopify
 - Use descriptive labels: Button-Front Shirt Design, Belted Waist Detail, Orthopedic Support, Bold Floral Print, Woven Design, Versatile Styling
-- Each bullet = label + colon + ONE full sentence with specific detail AND a clear benefit
+- Format: - Feature Label: One full sentence with specific detail AND a clear benefit
 - "Versatile Styling" is allowed as a bullet label when describing pairing/occasions
 - NEVER use standalone generic labels alone: Silhouette:, Length:, Color:, Material:, Fabric:, Quality:
 
@@ -93,7 +97,7 @@ Size chart rules:
 Cheat codes:
 - Sandals → start description headline with "COMFORTABLE..." when appropriate; use Comfortable in title
 - Orthopedic sandals → "Comfortable Orthopedic Sandals for Women with..."
-- Formal/wedding guest dresses → end title with "Formal Wedding Guest Style"
+- Formal/wedding-appropriate dresses → include "wedding guest dress" or "wedding guest dresses" in title or description whenever wedding/formal occasions are referenced
 - Linen pants → "Effortless Linen Wide Leg Pants for Women with High Waist..."
 - Blouses/tops → use keyword "blouses"
 - Jeans → include "Relaxed"
@@ -129,15 +133,15 @@ The Brittany dress combines effortless boho ease with a button-front design, col
 
 WHY YOU'LL LOVE IT
 
-Button-Front Shirt Design: A classic, feminine neckline that adds effortless boho sophistication to any casual warm-weather look.
+- Button-Front Shirt Design: A classic, feminine neckline that adds effortless boho sophistication to any casual warm-weather look.
 
-Belted Waist Detail: A flattering, defined silhouette that flows beautifully into the maxi skirt.
+- Belted Waist Detail: A flattering, defined silhouette that flows beautifully into the maxi skirt.
 
-Flowing Maxi Length: A floor-grazing cut that moves beautifully for any casual coastal occasion.
+- Flowing Maxi Length: A floor-grazing cut that moves beautifully for any casual coastal occasion.
 
-Versatile Styling: Pairs beautifully with sandals or espadrilles for beach days, holidays, or casual summer outings.
+- Versatile Styling: Pairs beautifully with sandals or espadrilles for beach days, holidays, or casual summer outings.
 
-This dress is the perfect choice for women who want effortless boho style for any casual warm-weather occasion.
+- This dress is the perfect choice for women who want effortless boho style for any casual warm-weather occasion.
 
 SIZE CHART (IN)
 
@@ -155,15 +159,15 @@ Flowing in a relaxed high waist silhouette, this printed shirt dress brings easy
 
 WHY YOU'LL LOVE IT
 
-Flowing Maxi Silhouette: The long, breezy cut skims the body for relaxed all day comfort.
+- Flowing Maxi Silhouette: The long, breezy cut skims the body for relaxed all day comfort.
 
-Structured Stand Collar: A crisp stand collar and button placket add a sharp, put together touch.
+- Structured Stand Collar: A crisp stand collar and button placket add a sharp, put together touch.
 
-Flattering High Waist: Soft gathering at the waist defines the midsection for a beautifully feminine shape.
+- Flattering High Waist: Soft gathering at the waist defines the midsection for a beautifully feminine shape.
 
-Convenient Side Pockets: Handy pockets bring everyday ease without disrupting the clean silhouette.
+- Convenient Side Pockets: Handy pockets bring everyday ease without disrupting the clean silhouette.
 
-Whether you are exploring a gallery, enjoying a garden gathering, or strolling on a sunny weekend, this printed maxi dress delivers effortless bohemian style.
+- Whether you are exploring a gallery, enjoying a garden gathering, or strolling on a sunny weekend, this printed maxi dress delivers effortless bohemian style.
 
 SIZE CHART (IN)
 
@@ -181,15 +185,15 @@ The Suzanne sandals combine serious orthopedic comfort with a sleek platform des
 
 WHY YOU'LL LOVE IT
 
-Orthopedic Support: Designed to reduce foot fatigue and keep you comfortable all day long.
+- Orthopedic Support: Designed to reduce foot fatigue and keep you comfortable all day long.
 
-Platform Sole: A stable, comfortable lift for extended wear throughout the day.
+- Platform Sole: A stable, comfortable lift for extended wear throughout the day.
 
-Cross-Strap Fit: Ensures a secure, personalized fit for every foot shape.
+- Cross-Strap Fit: Ensures a secure, personalized fit for every foot shape.
 
-Versatile Styling: Pairs effortlessly with jeans, dresses, or casual summer outfits.
+- Versatile Styling: Pairs effortlessly with jeans, dresses, or casual summer outfits.
 
-These sandals are the perfect summer essential for women who want serious orthopedic comfort with everyday style.
+- These sandals are the perfect summer essential for women who want serious orthopedic comfort with everyday style.
 
 SIZE CHART (IN)
 
@@ -205,19 +209,19 @@ SIZE CHART (IN)
   `
 BOLD FLORAL ELEGANCE FOR EVERY SPECIAL OCCASION
 
-The Elaine dress combines a striking bold floral print with effortless formal drama. A wrap V-neck, flowing cape sleeves, and floor-length A-line maxi cut make this the perfect dress for weddings, garden galas, or any occasion that calls for a truly unforgettable look.
+The Elaine dress combines a striking bold floral print with effortless formal drama. A wrap V-neck, flowing cape sleeves, and floor-length A-line maxi cut make this the perfect wedding guest dress for weddings, garden galas, or any occasion that calls for a truly unforgettable look.
 
 WHY YOU'LL LOVE IT
 
-Bold Floral Print: A dramatic, eye-catching pattern that commands attention at any formal wedding or special occasion.
+- Bold Floral Print: A dramatic, eye-catching pattern that commands attention at any formal wedding or special occasion.
 
-Wrap V-Neck with Cape Sleeves: A graceful, flowing silhouette that adds effortless formal elegance to the maxi length.
+- Wrap V-Neck with Cape Sleeves: A graceful, flowing silhouette that adds effortless formal elegance to the maxi length.
 
-Floor-Length A-Line Cut: A sweeping silhouette that moves beautifully for any dressed-up warm-weather event.
+- Floor-Length A-Line Cut: A sweeping silhouette that moves beautifully for any dressed-up warm-weather event.
 
-Versatile Styling: Pairs beautifully with strappy heels or statement earrings for weddings, garden galas, or formal evening occasions.
+- Versatile Styling: Pairs beautifully with strappy heels or statement earrings for weddings, garden galas, or formal evening occasions.
 
-This dress is the perfect choice for women who want elegant bold floral style for any formal wedding guest occasion.
+- This dress is the perfect choice for women who want an elegant wedding guest dress for any formal occasion.
 
 SIZE CHART (IN)
 
@@ -235,15 +239,15 @@ This black floral midi dress combines a structured mandarin collar with a keyhol
 
 WHY YOU'LL LOVE IT
 
-Bold Floral Print on Black: A striking, dark romantic pattern that commands attention at any formal event.
+- Bold Floral Print on Black: A striking, dark romantic pattern that commands attention at any formal event.
 
-Mandarin Collar with Keyhole: A refined, editorial neckline detail that adds instant sophistication to the look.
+- Mandarin Collar with Keyhole: A refined, editorial neckline detail that adds instant sophistication to the look.
 
-Sweeping A-Line Pleated Skirt: A dramatic, flattering silhouette that flows beautifully with every step.
+- Sweeping A-Line Pleated Skirt: A dramatic, flattering silhouette that flows beautifully with every step.
 
-Cinched Waist Detail: Defines the figure elegantly for a polished, hourglass-enhancing formal look.
+- Cinched Waist Detail: Defines the figure elegantly for a polished, hourglass-enhancing formal look.
 
-This dress is the perfect choice for women who want an elegant black floral dress for any formal wedding guest or special occasion.
+- This dress is the perfect choice for women who want an elegant black floral dress for any formal wedding guest or special occasion.
 
 SIZE CHART (IN)
 
@@ -261,15 +265,15 @@ The Lisa flats combine a timeless woven design with all-day comfort. A pointed t
 
 WHY YOU'LL LOVE IT
 
-Woven Design: A unique, textured finish that adds elegance to any casual or smart outfit.
+- Woven Design: A unique, textured finish that adds elegance to any casual or smart outfit.
 
-Pointed Toe Silhouette: A sleek, timeless look that pairs beautifully with any outfit.
+- Pointed Toe Silhouette: A sleek, timeless look that pairs beautifully with any outfit.
 
-Easy Slip-On Fit: No laces, no fuss — effortless style every time.
+- Easy Slip-On Fit: No laces, no fuss — effortless style every time.
 
-Lightweight Sole: Extra comfort for extended wear throughout the day.
+- Lightweight Sole: Extra comfort for extended wear throughout the day.
 
-These flats are the perfect everyday essential for women who want effortless elegance with all-day comfort.
+- These flats are the perfect everyday essential for women who want effortless elegance with all-day comfort.
 
 SIZE CHART (IN)
 
@@ -289,15 +293,15 @@ This vest and wide-leg pants set combines a structured sleeveless lapel vest wit
 
 WHY YOU'LL LOVE IT
 
-Structured Lapel Vest: A tailored, sophisticated upper that adds instant polish and elegance to the set.
+- Structured Lapel Vest: A tailored, sophisticated upper that adds instant polish and elegance to the set.
 
-Relaxed Wide-Leg Cut: A flattering, flowing silhouette that elongates the legs beautifully.
+- Relaxed Wide-Leg Cut: A flattering, flowing silhouette that elongates the legs beautifully.
 
-Matching Co-Ord Set: Effortlessly styled from head to toe — formal elegance with zero effort required.
+- Matching Co-Ord Set: Effortlessly styled from head to toe — formal elegance with zero effort required.
 
-Versatile Styling: Pairs with heels for garden parties or sandals for warm-weather formal outings.
+- Versatile Styling: Pairs with heels for garden parties or sandals for warm-weather formal outings.
 
-This set is the perfect choice for women who want an elegant vest and wide-leg pants set for any formal or dressed-up occasion.
+- This set is the perfect choice for women who want an elegant vest and wide-leg pants set for any formal or dressed-up occasion.
 
 SIZE CHART (IN)
 
@@ -373,6 +377,8 @@ ${sheetKeywords.slice(0, 150).join(', ')}
 
 ${LISTING_RULES}
 
+${WEDDING_GUEST_KEYWORD_RULE}
+
 ${BANNED_MATERIALS}
 
 ${BANNED_BULLET_LABELS}
@@ -387,7 +393,7 @@ ${DESCRIPTION_BAD_EXAMPLE}
 RESPOND IN THIS EXACT JSON FORMAT — nothing else:
 {
   "title": "Effortless Boho Maxi Dress for Women with Button Front Belted Waist Coastal Style",
-  "description": "ALL CAPS HEADLINE\\n\\nIntro paragraph(s)...\\n\\nWHY YOU'LL LOVE IT\\n\\nFeature Label: full sentence.\\nFeature Label: full sentence.\\nFeature Label: full sentence.\\nFeature Label: full sentence.\\n\\nClosing sentence.\\n\\nSIZE CHART (IN)\\n\\n| Size | Bust | Waist | Length |\\n| --- | --- | --- | --- |\\n| M | 37.0 | 29.0 | 57 |"
+  "description": "ALL CAPS HEADLINE\\n\\nIntro paragraph(s)...\\n\\nWHY YOU'LL LOVE IT\\n\\n- Feature Label: full sentence.\\n- Feature Label: full sentence.\\n- Feature Label: full sentence.\\n- Feature Label: full sentence.\\n\\nClosing sentence.\\n\\nSIZE CHART (IN)\\n\\n| Size | Bust | Waist | Length |\\n| --- | --- | --- | --- |\\n| M | 37.0 | 29.0 | 57 |"
 }${strictNote}${retryNote}`;
 }
 

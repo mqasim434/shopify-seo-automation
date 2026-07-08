@@ -6,10 +6,11 @@ const {
   formatVisionContext,
   getProductImageUrls,
 } = require('../utils/product-images');
+const { validateWeddingGuestKeyword } = require('../utils/wedding-guest-keyword');
 
 const MODEL = 'claude-sonnet-4-6';
 
-const SYSTEM_PROMPT = `You are a senior listing copywriter for a USA women's fashion Shopify dropshipping store. You write exactly like the client's approved listing samples: evocative ALL CAPS headline, intro naming construction and occasions, WHY YOU'LL LOVE IT with 4 feature bullets, closing sentence, and SIZE CHART (IN). Study product images when provided for visible design details and color variant count. NEVER mention fabric, material, polyester, or any fiber names — describe construction and design only. Output only valid JSON with "title" and "description" fields.`;
+const SYSTEM_PROMPT = `You are a senior listing copywriter for a USA women's fashion Shopify dropshipping store. You write exactly like the client's approved listing samples: evocative ALL CAPS headline, intro naming construction and occasions, WHY YOU'LL LOVE IT with 4 bullet points each prefixed with "- ", closing sentence, and SIZE CHART (IN). When a dress suits weddings, garden galas, cocktail parties, or formal evenings, always include "wedding guest dress" or "wedding guest dresses" in the title or description. Study product images when provided for visible design details and color variant count. NEVER mention fabric, material, polyester, or any fiber names — describe construction and design only. Output only valid JSON with "title" and "description" fields.`;
 
 const FABRIC_MATERIAL_PATTERN =
   /\bfabric\b|\bmaterial\b|polyester|poly[- ]blend|poly-blend|polycotton|poly cotton|synthetic fabric|synthetic material|man-made fiber|\blinen\b|\bcotton\b|\bsilk\b|\bsatin\b|\bleather\b|\bsuede\b|\bnylon\b|\bspandex\b|\belastane\b|\brayon\b|\bviscose\b|\bchiffon\b|\bgeorgette\b|\btulle\b|\bfleece\b|\bwool\b|\bacrylic\b|\bpoly\b/i;
@@ -182,10 +183,15 @@ function validateDescriptionContent(description) {
     const bullets = bulletSection[1]
       .split('\n')
       .map((line) => line.trim())
-      .filter((line) => line.includes(':'));
+      .filter((line) => line.replace(/^[-•*]\s+/, '').includes(':'));
 
     if (bullets.length < 4) {
       issues.push('must include exactly 4 feature bullets');
+    }
+
+    const unprefixedBullets = bullets.filter((line) => !/^[-•*]\s+/.test(line));
+    if (unprefixedBullets.length > 0) {
+      issues.push('feature bullets must be prefixed with "- "');
     }
 
     for (const bullet of bullets) {
@@ -194,6 +200,22 @@ function validateDescriptionContent(description) {
         break;
       }
     }
+  }
+
+  return issues;
+}
+
+function validateListingContent(parsed, product) {
+  const issues = validateDescriptionContent(parsed.description);
+
+  const weddingKeywordIssue = validateWeddingGuestKeyword(
+    product.title,
+    product.tags,
+    parsed.title,
+    parsed.description
+  );
+  if (weddingKeywordIssue) {
+    issues.push(weddingKeywordIssue);
   }
 
   return issues;
@@ -280,7 +302,7 @@ async function generateProductContent(product, keywords) {
         lastIssues
       );
       const parsed = parseClaudeResponse(lastRawResponse);
-      const issues = validateDescriptionContent(parsed.description);
+      const issues = validateListingContent(parsed, product);
       lastIssues = issues;
 
       if (issues.length === 0) {
